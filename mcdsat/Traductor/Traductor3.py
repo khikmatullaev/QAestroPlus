@@ -4,6 +4,7 @@ import resource
 import pprint
 import random
 import cPickle
+import sys
 
 from Parser import *
 from Parser.CQparser import *

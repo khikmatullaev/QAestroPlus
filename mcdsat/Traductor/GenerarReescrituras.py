@@ -5,7 +5,8 @@ import resource
 import pprint
 import random
 import cPickle  
-import pickle  
+import pickle
+import re
 
 from Unification import unificar
 from Parser import *
@@ -23,27 +24,30 @@ archVistas = ''
 archCons = ''
 
  
-def generarReescrituras(exp, archV, archC, archVars, archTiempo, stdin):
+def generarReescrituras(exp, archV, archC, archVars, archTiempo, stdin, type, quantity, costFile):
     tiempoi = resource.getrusage(resource.RUSAGE_SELF)[0]
-    generarReescrituras1(exp, archV, archC, archVars, stdin)
+    generarReescrituras1(exp, archV, archC, archVars, stdin, type, quantity, costFile)
     tiempof = resource.getrusage(resource.RUSAGE_SELF)[0]
     
     fileobject = open(archTiempo, 'w')
     fileobject.write(str(tiempof-tiempoi))
     fileobject.close()
 
-def generarReescrituras1(exp, archVistas, archCons, archVars, stdin):
+def generarReescrituras1(exp, archVistas, archCons, archVars, stdin, type, quantity, costFile):
     archVistas2 = archVistas.replace('.txt', '')
+
     vistas = cargarCQ(archVistas)
+
     #print archMod
     consultas = cargarCQ(archCons)
+
     for q in consultas:
         numeros = leerVars(archVars)
         lenQuery = len(q.cuerpo)
         if exp == 'Sat':
             generarReescMCD(numeros, stdin, vistas)
         if exp == 'SatRW':
-            generarReescRW(numeros, stdin, lenQuery,q, vistas)
+            generarReescRW(numeros, stdin, lenQuery,q, vistas, type, quantity, costFile)
 ##        llamarzchaff(transf, archSalida)
 
 def leerVars(archVars):
@@ -95,7 +99,7 @@ def crearReescritura(mcdc, query):
     cue = [v.cabeza for v in r]
     cab = query.cabeza.map_variables3(ecgeneral)
     res = CQ(cab, cue, [])
-    return res    
+    return res
 
 
 def crearMCD(mod, vistas):
@@ -115,17 +119,66 @@ def crearMCD(mod, vistas):
             gc.add(var[2:len(var)-1])
     return MCD(phictodo, gc, vista)
 
+def viewDictionary(costFile):
+    ifile  = open(costFile, 'r')
 
-def generarReescRW(numeros, stdin, lenQuery, query, vistas):
+    viewDic = {}
+
+    for line in ifile:
+        line = line[:-1]
+        view = line.split('=')
+        viewDic[view[0]] = view[1]
+
+    return viewDic
+
+def makeCost(value, viewCostDictionary):
+    functions = value.split('),')
+    cost = 0.0
+
+    for each in functions:
+        func = each.split('(')[0]
+        func = func.split()
+        cost += float(viewCostDictionary[func[0]].replace(',', '.'))
+
+    return cost
+
+def viewCosts(views, type, quantity, costFile):
+    viewCostDictionary = viewDictionary(costFile)
+
+    viewDic = {}
+
+    for i, value in views.items():
+        viewDic[i] = makeCost(value.split(':-')[1], viewCostDictionary)
+
+    i = 0
+    if type == '-top':
+        for index, value in sorted(viewDic.iteritems(), key=lambda (k, v): (v, k), reverse=True):
+            if int(i) < int(quantity):
+                print views[index] + ', cost(' + str(value) + ')'
+            i += 1
+
+    elif type == '-bottom':
+        for index, value in sorted(viewDic.iteritems(), key=lambda (k, v): (v, k)):
+            if int(i) < int(quantity):
+                print views[index] + ', cost(' + str(value) + ')'
+            i += 1
+
+def generarReescRW(numeros, stdin, lenQuery, query, vistas, type, quantity, costFile):
     infile = stdin
     modelos = []
     n = len(numeros)
+
+    answerViews = {}
+
+    i = 0
     for x in infile:
         l = x.strip().split()
         if l[0] != 'main:':
-            print crearReescritura(obtModeloRW(numeros, n, l, lenQuery, vistas), query)
-    return modelos
+            answerViews[i] = str(crearReescritura(obtModeloRW(numeros, n, l, lenQuery, vistas), query))
+            i += 1
 
+    viewCosts(answerViews, type, quantity, costFile)
+    return modelos
 
 def obtModeloRW(numeros, n, lista, lenQuery, vistas):
     modp = []

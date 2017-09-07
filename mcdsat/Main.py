@@ -14,9 +14,6 @@ from sets import Set
 from random import *
 #from  import *
 
-
-
-
 if __name__ == "__main__":
     #import psyco  # only needed for improved performance
     #psyco.full()  # only needed for improved performance
@@ -30,5 +27,8 @@ if __name__ == "__main__":
         archSalida = sys.argv[7]
         traducir(exp, archVistas, archCons, archVars, archTiempo, archSalida)
     elif op == 'G':
-        generarReescrituras(exp, archVistas, archCons, archVars, archTiempo, sys.stdin)
+        type = sys.argv[7]
+        quantity = sys.argv[8]
+        costFile = sys.argv[9]
+        generarReescrituras(exp, archVistas, archCons, archVars, archTiempo, sys.stdin, type, quantity, costFile)
 

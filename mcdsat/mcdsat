@@ -17,6 +17,10 @@ else
   exit
 fi
 
+# $1 = RW
+# $2 = query_1.txt_mcdsat.tmp
+# #3 = views.txt_mcdsat.tmp
+
 VIS=`basename ${2} .txt`
 CNF=${EXP}${VIS}.cnf
 NNF=${CNF}.nnf
@@ -25,13 +29,13 @@ LOG1=${EXP}${VIS}_t1.txt
 LOG2=${EXP}${VIS}_t2.txt
 
 echo "[Translate to CNF]" $CNF &&
-python $MCDSATDIR/Main.py T $EXP $2 $3 $VIS.pyo $LOG1 $CNF && 
+python $MCDSATDIR/Main.py T $EXP $2 $3 $VIS.pyo $LOG1 $CNF &&
 
 echo "[Compile to DNNF]" $DNNF &&
-$C2D -in $CNF -smooth -reduce -dt_method 4 > $LOG && 
+$C2D -in $CNF -smooth -reduce -dt_method 4 > $LOG &&
 
 echo "[Generate models]" &&
-$MODS -w $NNF | python $MCDSATDIR/Main.py G $EXP $2 $3 $VIS.pyo $LOG2 && 
+$MODS -w $NNF | python $MCDSATDIR/Main.py G $EXP $2 $3 $VIS.pyo $LOG2 $4 $5 $6 &&
 
 CTIME=`awk '$0~"Total Time" {t=substr($3,1);sub("s","",t);print t;}'<$LOG`
 TIME1=`cat $LOG1`
